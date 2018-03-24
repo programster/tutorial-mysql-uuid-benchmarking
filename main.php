@@ -129,11 +129,35 @@ function main()
     $numLogsToInsert = ONE_MILLION * 5;
     $results = array();
     
+    $createIntTableQuery = 
+        "CREATE TABLE `log` (
+            `id` int unsigned NOT NULL AUTO_INCREMENT,
+            `message` varchar(255) NOT NULL,
+            `when` int unsigned NOT NULL,
+            PRIMARY KEY (`id`),
+            INDEX (`when`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
+        
+    $intBasedLogCreator = function(int $i){
+        $startTime = 1200000000;
+        $logInterval = 60; // 60 seconds between logs;
+        $logTime = $startTime + ($logInterval * $i) - rand(0, 1000);
+        
+        return array(
+            'message' => 'hello world',
+            'when' => $logTime,
+        );
+    };
+    
+    $testName = "using-auto-increment";
+    $results[$testName] = runner($testName, $createIntTableQuery, $intBasedLogCreator, $db, $numLogsToInsert);
+    
+    
     $uuidLogType4RandomGenerator = function(int $i){
         $startTime = 1200000000;
         $logInterval = 60; // 60 seconds between logs;
         $logTime = $startTime + ($logInterval * $i) - rand(0, 1000);
-
+        
         return array(
             'uuid' => generateUuidType4(),
             'message' => 'hello world',
@@ -145,7 +169,7 @@ function main()
         $startTime = 1200000000;
         $logInterval = 60; // 60 seconds between logs;
         $logTime = $startTime + ($logInterval * $i) - rand(0, 1000);
-
+        
         return array(
             'uuid' => generateUuidType4Sequential(),
             'message' => 'hello world',
@@ -169,12 +193,11 @@ function main()
     $results[$testName] = runner($testName, $createUuidTableQuery, $uuidLogType4RandomGenerator, $db, $numLogsToInsert);
     
     
-    
     $uuidType1LogGenerator = function(int $i){
         $startTime = 1200000000;
         $logInterval = 60; // 60 seconds between logs;
         $logTime = $startTime + ($logInterval * $i) - rand(0, 1000);
-
+        
         return array(
             'uuid' => generateUuidType1(),
             'message' => 'hello world',
@@ -185,57 +208,8 @@ function main()
     $testName = "uuid-test-type-1";
     $results[$testName] = runner($testName, $createUuidTableQuery, $uuidType1LogGenerator, $db, $numLogsToInsert);
     
-    if (false)
-    {
-        $createTimestampTableQuery = 
-            "CREATE TABLE `log` (
-                `id` int unsigned NOT NULL AUTO_INCREMENT,
-                `message` varchar(255) NOT NULL,
-                `when` timestamp NOT NULL,
-                PRIMARY KEY (`id`),
-                INDEX (`when`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
-
-        $logCreator = function(int $i){
-            $startTime = 1200000000;
-            $logInterval = 60; // 60 seconds between logs;
-            $logTime = $startTime + ($logInterval * $i) - rand(0, 1000);
-
-            return array(
-                'message' => 'hello world',
-                'when' => date('Y-m-d H:i:s', $logTime),
-            );
-        };
-
-        $testName = "using-timestamp";
-        $results[$testName] = runner("using-timestamp", $createTimestampTableQuery, $logCreator, $db, $numLogsToInsert);
-
-
-        $intBasedLogCreator = function(int $i){
-            $startTime = 1200000000;
-            $logInterval = 60; // 60 seconds between logs;
-            $logTime = $startTime + ($logInterval * $i) - rand(0, 1000);
-
-            return array(
-                'message' => 'hello world',
-                'when' => $logTime,
-            );
-        };
-
-        $createIntTableQuery = 
-            "CREATE TABLE `log` (
-                `id` int unsigned NOT NULL AUTO_INCREMENT,
-                `message` varchar(255) NOT NULL,
-                `when` int unsigned NOT NULL,
-                PRIMARY KEY (`id`),
-                INDEX (`when`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
-
-        $testName = "using-int-for-time";
-        $results[$testName] = runner($testName, $createIntTableQuery, $intBasedLogCreator, $db, $numLogsToInsert);
     
-    }
-    
+    # Write the test durations to a file.
     $resultsFileHandle = fopen(__DIR__ . '/results/test-results.csv', 'w');
     
     foreach ($results as $testName => $timeTaken) 
@@ -248,8 +222,3 @@ function main()
 }
 
 main();
-        
-
-
-
-
