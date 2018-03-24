@@ -1,0 +1,6 @@
+{
+    "require": {
+        "irap/core-libs": "^1.1",
+        "ramsey/uuid": "^3.7"
+    }
+}
