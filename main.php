@@ -7,7 +7,9 @@ date_default_timezone_set('UTC');
 
 
 /**
- * 
+ * Display a progress bar in the CLI. This will dynamically take up the full width of the 
+ * terminal and if you keep calling this function, it will appear animated as the progress bar
+ * keeps writing over the top of itself.
  * @param float $percentage - the percentage completed.
  * @param int $numDecimalPlaces - the number of decimal places to show for percentage output string
  */
@@ -23,14 +25,14 @@ function showProgressBar($percentage, int $numDecimalPlaces)
     $percentageString = str_pad($percentageString, $percentageStringLength, " ", STR_PAD_LEFT);
     
     $percentageStringLength += 3; // add 2 for () and a space before bar starts.
-
+    
     $terminalWidth = `tput cols`;
     $barWidth = $terminalWidth - ($percentageStringLength) - 2; // subtract 2 for [] around bar
     $numBars = round(($percentage) / 100 * ($barWidth));
     $numEmptyBars = $barWidth - $numBars;
     
     $barsString = '[' . str_repeat("=", ($numBars)) . str_repeat(" ", ($numEmptyBars)) . ']';
-
+    
     echo "($percentageString) " . $barsString . "\r";
 }
 
@@ -53,14 +55,19 @@ function runner($testName, $createTableQuery, callable $logCreator, mysqli $db, 
     for ($i=0; $i<$numLogsToInsert; $i++)
     {
         $logs[] = $logCreator($i);
-
+        
         if (count($logs) % BATCH_SIZE == 0)
         {
             $batchInsertQuery = iRAP\CoreLibs\MysqliLib::generateBatchInsertQuery($logs, 'log', $db);
             
             $start = microtime(TRUE);
-            $db->query($batchInsertQuery);
+            $result = $db->query($batchInsertQuery);
             $end = microtime(TRUE);
+            
+            if ($result === FALSE)
+            {
+                throw new Exception("Insert query failed.");
+            }
             
             $insertTimeTaken = $end - $start;
             file_put_contents($logFilepath, $insertTimeTaken . PHP_EOL, FILE_APPEND);
@@ -92,22 +99,22 @@ function generateUuidType4() : string
 function generateUuidType4Sequential() : string
 {
     static $factory = null;
-
+    
     if ($factory == null)
     {
         $factory = new \Ramsey\Uuid\UuidFactory();
-
+        
         $generator = new \Ramsey\Uuid\Generator\CombGenerator(
             $factory->getRandomGenerator(), 
             $factory->getNumberConverter()
         );
-
+        
         $codec = new \Ramsey\Uuid\Codec\TimestampFirstCombCodec($factory->getUuidBuilder());
-
+        
         $factory->setRandomGenerator($generator);
         $factory->setCodec($codec);
     }
-
+    
     \Ramsey\Uuid\Uuid::setFactory($factory);
     $uuidString = \Ramsey\Uuid\Uuid::uuid4()->toString();
     return $uuidString;
